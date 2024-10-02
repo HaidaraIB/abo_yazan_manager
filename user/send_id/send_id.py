@@ -3,12 +3,11 @@ from telegram.ext import ContextTypes, MessageHandler, filters
 from custom_filters import User
 from send_id.common import (
     extract_important_info,
-    stringify_account_info,
     get_id_info,
     check_local_storage,
     check_remote_storage,
 )
-
+from common.stringifies import stringify_account_info
 from common.constants import *
 
 import models
@@ -19,7 +18,7 @@ async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
         trader_id = update.message.text
 
         wait_message = await update.message.reply_text("الرجاء الانتظار...")
-        text = await get_id_info(update=update, trader_id=trader_id)
+        text = await get_id_info(trader_id=trader_id)
         if not text:
             await wait_message.edit_text(
                 text=ACCOUNT_NOT_FOUND_TEXT,

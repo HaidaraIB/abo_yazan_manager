@@ -6,20 +6,12 @@ from telegram.ext import (
     filters,
     CallbackQueryHandler,
 )
-
-from common.back_to_home_page import (
-    back_to_user_home_page_button,
-    back_to_user_home_page_handler,
-)
 from custom_filters import Admin
-from common.common import build_back_button, build_user_keyboard
 from common.constants import *
-from user.withdraw.common import stringify_withdraw_order
-from user.my_account.account_balance import calc_available_balance
-
+from common.common import calc_available_balance, edit_message
+from common.stringifies import *
 import models
 import os
-
 from start import start_command
 
 WALLET_ADDRESS, AMOUNT, CONFIRM_WITHDRAW = range(3)
@@ -27,50 +19,54 @@ WALLET_ADDRESS, AMOUNT, CONFIRM_WITHDRAW = range(3)
 
 async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
-        account = models.Account.get(user_id=update.effective_user.id)
-        if not account:
-            await update.callback_query.answer(
-                text="ليس لديك حساب بعد، قم بإضافة حساب بالضغط على زر حسابي 👤",
-                show_alert=True,
+        balances = calc_available_balance(user_id=update.effective_user.id)
+        withdraw_msg = await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=(
+                "أرسل المبلغ.\n"
+                f"الرصيد المتاح: <code>{balances['available_balance']:.2f}</code>$"
+            ),
+        )
+        context.user_data["withdraw_msg_id"] = withdraw_msg.id
+        return AMOUNT
+
+
+async def get_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type == Chat.PRIVATE:
+
+        text = "أرسل عنوان محفظة USDT\n\n" "<b>ملاحظة: الشبكة المستخدمة TRC20</b>"
+        balances = calc_available_balance(user_id=update.effective_user.id)
+        amount = float(update.message.text)
+
+        if balances["available_balance"] - amount < 0:
+            await update.message.reply_text(
+                text=f"ليس لديك رصيد كافٍ، الرصيد المتاح: <code>{balances['available_balance']:.2f}</code>$",
+            )
+            return
+        elif amount == 0:
+            await update.message.reply_text(
+                text=f"الرجاء إرسال قيمة موجبة تماماً أكبر من الصفر، الرصيد المتاح: <code>{balances['available_balance']:.2f}</code>$",
             )
             return
 
-        await update.callback_query.edit_message_text(
-            text=("أرسل عنوان محفظة USDT\n\n" "<b>ملاحظة: الشبكة المستخدمة TRC20</b>"),
-            reply_markup=InlineKeyboardMarkup(back_to_user_home_page_button),
+        context.user_data["withdraw_amount"] = amount
+
+        get_amount_msg = await update.message.reply_text(
+            text=text,
         )
+        context.user_data["get_amount_msg_id"] = get_amount_msg.id
+
+        await context.bot.delete_message(
+            chat_id=update.effective_user.id,
+            message_id=context.user_data["withdraw_msg_id"],
+        )
+        await update.message.delete()
+
         return WALLET_ADDRESS
 
 
 async def get_wallet_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
-        back_buttons = [
-            build_back_button("back_to_get_wallet_address"),
-            back_to_user_home_page_button[0],
-        ]
-        if update.message:
-            context.user_data["withdraw_wallet_address"] = update.message.text
-            await update.message.reply_text(
-                text="أرسل المبلغ",
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
-        else:
-            await update.callback_query.edit_message_text(
-                text="أرسل المبلغ",
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
-        return AMOUNT
-
-
-back_to_get_wallet_address = withdraw
-
-
-async def get_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == Chat.PRIVATE:
-        back_buttons = [
-            build_back_button("back_to_get_amount"),
-            back_to_user_home_page_button[0],
-        ]
         keyboard = [
             [
                 InlineKeyboardButton(
@@ -82,44 +78,36 @@ async def get_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     callback_data="cancel_withdraw",
                 ),
             ],
-            *back_buttons,
         ]
-        if update.message:
-            balances = calc_available_balance(user_id=update.effective_user.id)
-            amount = float(update.message.text)
-
-            if balances["available_balance"] - amount < 0:
-                await update.message.reply_text(
-                    text=f"ليس لديك رصيد كافٍ، الرصيد المتاح: <b>{balances['available_balance']}$</b>",
-                    reply_markup=InlineKeyboardMarkup(back_buttons),
-                )
-                return
-
-            context.user_data["withdraw_amount"] = amount
-            await update.message.reply_text(
-                text=stringify_withdraw_order(
-                    amount=context.user_data["withdraw_amount"],
-                    address=context.user_data["withdraw_wallet_address"],
-                ),
-                reply_markup=InlineKeyboardMarkup(keyboard),
+        context.user_data["withdraw_wallet_address"] = update.message.text
+        get_wallet_address_msg = await update.message.reply_text(
+            text=stringify_withdraw_order(
+                amount=context.user_data["withdraw_amount"],
+                address=context.user_data["withdraw_wallet_address"],
             )
-        else:
-            await update.callback_query.edit_message_text(
-                text=stringify_withdraw_order(
-                    amount=context.user_data["withdraw_amount"],
-                    address=context.user_data["withdraw_wallet_address"],
-                ),
-                reply_markup=InlineKeyboardMarkup(keyboard),
-            )
+            + "هل أنت متأكد؟",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+        context.user_data["get_wallet_address_msg_id"] = get_wallet_address_msg.id
+
+        await context.bot.delete_message(
+            chat_id=update.effective_user.id,
+            message_id=context.user_data["get_amount_msg_id"],
+        )
+        await update.message.delete()
+
         return CONFIRM_WITHDRAW
-
-
-back_to_get_amount = get_wallet_address
 
 
 async def confirm_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
         if update.callback_query.data.startswith("approve"):
+
+            await models.Account.withdraw(
+                user_id=update.effective_user.id,
+                amount=context.user_data["withdraw_amount"],
+            )
+
             await context.bot.send_message(
                 chat_id=int(os.getenv("WITHDRAWALS_CHANNEL")),
                 text=stringify_withdraw_order(
@@ -132,19 +120,41 @@ async def confirm_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                 ),
             )
-            await update.callback_query.edit_message_text(
+
+            await update.callback_query.answer(
                 text="شكراً لك، تم إرسال طلبك للمراجعة",
-                reply_markup=build_user_keyboard(),
+                show_alert=True,
             )
+
+            await edit_message(
+                context=context,
+                user_id=update.effective_user.id,
+                text=stringify_balance_info(user_id=update.effective_user.id),
+                msg_id=context.user_data["balance_info_msg_id"],
+                reply_markup=InlineKeyboardMarkup.from_button(
+                    InlineKeyboardButton(
+                        text="سحب 📤",
+                        callback_data="withdraw",
+                    )
+                ),
+            )
+
+            await update.message.reply_text(
+                text=("تم ✅\n" "الرجاء الضغط على تحديث ♻️"),
+                reply_markup=InlineKeyboardMarkup.from_button(
+                    InlineKeyboardButton(
+                        text="تحديث ♻️",
+                        callback_data="refresh to delete",
+                    )
+                ),
+            )
+
         else:
             await update.callback_query.answer(
                 text="تم الإلغاء ❌",
                 show_alert=True,
             )
-            await update.callback_query.edit_message_text(
-                text=HOME_PAGE_TEXT,
-                reply_markup=build_user_keyboard(),
-            )
+        await update.callback_query.delete_message()
         return ConversationHandler.END
 
 
@@ -168,18 +178,18 @@ withdraw_handler = ConversationHandler(
         )
     ],
     states={
-        WALLET_ADDRESS: [
-            MessageHandler(
-                filters=filters.Regex(r"^T[A-Za-z1-9]{33}$"),
-                callback=get_wallet_address,
-            )
-        ],
         AMOUNT: [
             MessageHandler(
                 filters=filters.Regex(
                     "^\d+\.?\d*$",
                 ),
                 callback=get_amount,
+            )
+        ],
+        WALLET_ADDRESS: [
+            MessageHandler(
+                filters=filters.Regex(r"^T[A-Za-z1-9]{33}$"),
+                callback=get_wallet_address,
             )
         ],
         CONFIRM_WITHDRAW: [
@@ -189,14 +199,7 @@ withdraw_handler = ConversationHandler(
             )
         ],
     },
-    fallbacks=[
-        start_command,
-        back_to_user_home_page_handler,
-        CallbackQueryHandler(
-            back_to_get_wallet_address, "^back_to_get_wallet_address$"
-        ),
-        CallbackQueryHandler(back_to_get_amount, "^back_to_get_amount$"),
-    ],
+    fallbacks=[start_command],
 )
 
 

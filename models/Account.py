@@ -66,6 +66,6 @@ class Account(Base):
     ):
         s.query(cls).filter_by(user_id=user_id).update(
             {
-                cls.withdrawals: cls.withdrawals - amount,
+                cls.withdrawals: cls.withdrawals + amount,
             }
         )

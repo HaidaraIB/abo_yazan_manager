@@ -1,2 +1,1 @@
-from user.my_account.my_account import my_account_handler, manage_account_handler
-from user.my_account.account_balance import account_balance_handler
+from user.my_account.my_account import manage_account_handler

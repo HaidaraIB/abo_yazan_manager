@@ -28,7 +28,7 @@ class User(BaseUser):
             try:
                 return res.fetchone().t[0]
             except:
-                pass
+                return
         res = s.execute(select(cls))
         try:
             return list(map(lambda x: x[0], res.tuples().all()))

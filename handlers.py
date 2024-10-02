@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import CallbackQueryHandler, InvalidCallbackData
-from start import start_command, admin_command
+import start
 from common.common import invalid_callback_data, create_folders
 from common.back_to_home_page import (
     back_to_admin_home_page_handler,
@@ -42,19 +42,16 @@ def main():
     # USER
 
     # MY ACCOUNT
-    app.add_handler(my_account_handler)
     app.add_handler(manage_account_handler)
-    app.add_handler(account_balance_handler)
 
     # WITHDRAW
     app.add_handler(withdraw_handler)
     app.add_handler(mark_as_done_handler)
 
     # TEAM
-    app.add_handler(team_handler)
-    app.add_handler(team_stats_handler)
     app.add_handler(add_ref_handler)
 
+    # REFRESH
     app.add_handler(refresh_handler)
 
     # ADMIN
@@ -72,12 +69,12 @@ def main():
     app.add_handler(remove_admin_handler)
 
     # ADMIN CALLS
-    app.add_handler(admin_command)
+    app.add_handler(start.admin_command)
     app.add_handler(find_id_handler)
     app.add_handler(hide_ids_keyboard_handler)
 
     # START
-    app.add_handler(start_command)
+    app.add_handler(start.start_command)
 
     # BACK TO HOME PAGE
     app.add_handler(back_to_user_home_page_handler)

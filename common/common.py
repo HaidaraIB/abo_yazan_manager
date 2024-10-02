@@ -12,6 +12,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ChatType
 import os
 import uuid
+import models
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -38,30 +39,7 @@ def check_hidden_keyboard(context: ContextTypes.DEFAULT_TYPE):
 
 
 def build_user_keyboard():
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text="سحب 📤",
-                callback_data="withdraw",
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="الفريق 👥",
-                callback_data="team",
-            ),
-            InlineKeyboardButton(
-                text="حسابي 👤",
-                callback_data="my account",
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="تحديث ♻️",
-                callback_data="refresh",
-            )
-        ],
-    ]
+    keyboard = []
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -134,3 +112,47 @@ def create_folders():
 async def invalid_callback_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == ChatType.PRIVATE:
         await update.callback_query.answer("انتهت صلاحية هذا الزر")
+
+
+def calc_available_balance(user_id: int):
+    my_account = models.Account.get(user_id=user_id)
+    my_account_info = models.AccountInfo.get(trader_id=my_account.trader_id)
+
+    refs = models.Referral.get(user_id=user_id)
+    refs_info = models.AccountInfo.get(
+        trader_ids=list(map(lambda x: x.referral_trader_id, refs))
+    )
+
+    team_balance = (
+        sum(list(map(lambda x: x.vol_share, refs_info))) - my_account_info.vol_share
+    )
+    level_reward = 0  # TODO how to calc?
+    all_time_balance = my_account_info.vol_share + team_balance + level_reward
+    available_balance = all_time_balance - my_account.withdrawals
+
+    return {
+        "team_balance": team_balance,
+        "level_reward": level_reward,
+        "all_time_balance": all_time_balance,
+        "available_balance": available_balance,
+        "my_account_balance": my_account_info.vol_share,
+        "withdrawals": my_account.withdrawals,
+    }
+
+
+async def edit_message(
+    context: ContextTypes.DEFAULT_TYPE,
+    user_id: int,
+    text: str,
+    msg_id: int,
+    reply_markup: InlineKeyboardMarkup,
+):
+    try:
+        await context.bot.edit_message_text(
+            chat_id=user_id,
+            message_id=msg_id,
+            text=text,
+            reply_markup=reply_markup,
+        )
+    except:
+        pass

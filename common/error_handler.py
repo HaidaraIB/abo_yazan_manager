@@ -3,8 +3,6 @@ from telegram.ext import ContextTypes
 from telegram.error import TimedOut, NetworkError
 import traceback
 import json
-import html
-import os
 from common.constants import *
 
 

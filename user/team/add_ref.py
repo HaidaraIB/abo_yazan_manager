@@ -6,20 +6,15 @@ from telegram.ext import (
     filters,
     ConversationHandler,
 )
-
-from common.back_to_home_page import (
-    back_to_user_home_page_button,
-    back_to_user_home_page_handler,
-)
 from common.constants import *
-
 from user.send_id.common import (
     get_id_info,
     extract_important_info,
     check_local_storage,
     check_remote_storage,
-    stringify_account_info,
 )
+from common.common import edit_message
+from common.stringifies import *
 import models
 from start import start_command
 
@@ -28,43 +23,34 @@ ID = 0
 
 async def add_ref(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
-        account = models.Account.get(user_id=update.effective_user.id)
-        if not account:
-            await update.callback_query.answer(
-                text="ليس لديك حساب بعد، قم بإضافة حساب بالضغط على زر حسابي 👤",
-                show_alert=True,
-            )
-            return
-        await update.callback_query.edit_message_text(
-            text="أرسل الآيدي",
-            reply_markup=InlineKeyboardMarkup(back_to_user_home_page_button),
+        await update.callback_query.answer(
+            text=(
+                "أرسل الآيدي.\n"
+                "في حال إرسالك إحالة مسجلة لديك مسبقاً، أو مستخدمة من قبل شخص آخر فسيقوم البوت بتجاهل الآيدي وحسب."
+            ),
+            show_alert=True,
         )
         return ID
 
 
 async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
+        wait_msg = await context.bot.send_message(
+            chat_id=update.effective_user.id, text="الرجاء الانتظار..."
+        )
         trader_id = update.message.text
 
         ref = models.Referral.get(referral_trader_id=trader_id)
         if ref:
-            if ref.user_id == update.effective_user.id:
-                await update.message.reply_text(
-                    text="هذا الآيدي في قائمة إحالاتك بالفعل"
-                )
-            else:
-                await update.message.reply_text(
-                    text="تم تسجيل هذا الآيدي عن طريق الإحالة من قبل"
-                )
-            return
+            await wait_msg.delete()
+            await update.message.delete()
+            return ConversationHandler.END
 
-        wait_message = await update.message.reply_text("الرجاء الانتظار...")
         text = await get_id_info(trader_id=trader_id)
         if not text:
-            await wait_message.edit_text(
-                text=ACCOUNT_NOT_FOUND_TEXT,
-            )
-            return
+            await wait_msg.delete()
+            await update.message.delete()
+            return ConversationHandler.END
 
         is_closed = "ACCOUNT CLOSED" in text
         data = extract_important_info(text, is_closed=is_closed)
@@ -77,17 +63,32 @@ async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user_id=update.effective_user.id, referral_trader_id=trader_id
         )
 
-        await update.message.reply_text(text="تمت إضافة الإحالة بنجاح ✅")
+        await edit_message(
+            context=context,
+            user_id=update.effective_user.id,
+            text=stringify_team_stats(user_id=update.effective_user.id),
+            msg_id=context.user_data["team_stats_msg_id"],
+            reply_markup=InlineKeyboardMarkup.from_button(
+                InlineKeyboardButton(
+                    text="إضافة إحالة ➕",
+                    callback_data="add ref",
+                ),
+            ),
+        )
 
         await update.message.reply_text(
-            text=(
-                "معلومات الإحالة:\n"
-                + stringify_account_info(
-                    info=models.AccountInfo.get(trader_id=trader_id)
+            text=("تم ✅\n" "الرجاء الضغط على تحديث ♻️"),
+            reply_markup=InlineKeyboardMarkup.from_button(
+                InlineKeyboardButton(
+                    text="تحديث ♻️",
+                    callback_data="refresh to delete",
                 )
-                + "اضغط /start للمتابعة."
-            )
+            ),
         )
+
+        await wait_msg.delete()
+        await update.message.delete()
+
         return ConversationHandler.END
 
 
@@ -106,8 +107,5 @@ add_ref_handler = ConversationHandler(
             )
         ]
     },
-    fallbacks=[
-        start_command,
-        back_to_user_home_page_handler,
-    ],
+    fallbacks=[start_command],
 )

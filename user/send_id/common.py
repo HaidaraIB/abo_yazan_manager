@@ -62,7 +62,7 @@ def extract_important_info(text: str, is_closed: bool):
                 value *= multiplier
             important_lines[key] = f"{value:.2f}"
         except ValueError:
-            pass
+            important_lines[key] = 0
 
     keys = ["turnover_clear", "vol_share", "balance", "deposits_sum", "withdrawal_sum"]
     multipliers_dict = {
@@ -79,23 +79,6 @@ def extract_important_info(text: str, is_closed: bool):
         )
 
     return important_lines
-
-
-def stringify_account_info(info: models.AccountInfo):
-    return (
-        f"حسابك: {info.trader_id}\n"
-        f"المستوى: {info.level}\n"
-        "نسبه الربح: {}%\n"
-        "-----------------------------------------------------------------\n"
-        f"رصيدك: {info.balance}$\n"
-        f"عدد مرات الايداع: {info.deposits_count}\n"
-        f"مجموع الايداعات: {info.deposits_sum}$\n"
-        f"عدد مرات السحب: {info.withdrawal_count}\n"
-        f"مجموع السحوبات: {info.withdrawal_sum}$\n"
-        f"حجم التداول الحقيقي: {info.vol_share}$\n"
-        "-----------------------------------------------------------------\n"
-        f"الربح: {info.turnover_clear}$\n"
-    )
 
 
 def stringify_for_data_channel(info: models.AccountInfo):
