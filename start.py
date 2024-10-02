@@ -1,28 +1,9 @@
-from telegram import (
-    Update,
-    Chat,
-    ReplyKeyboardMarkup,
-    BotCommand,
-    ReplyKeyboardRemove,
-    BotCommandScopeChat,
-)
-
-from telegram.ext import (
-    CommandHandler,
-    ContextTypes,
-    Application,
-    ConversationHandler,
-)
-
-
+from telegram import Update, Chat, BotCommandScopeChat
+from telegram.ext import CommandHandler, ContextTypes, Application, ConversationHandler
 import os
 import models
 from custom_filters import Admin
-from common.decorators import (
-    check_if_user_banned_dec,
-    add_new_user_dec,
-    check_if_user_member_decorator,
-)
+from common.decorators import check_if_user_banned_dec, add_new_user_dec
 from common.common import (
     build_user_keyboard,
     build_admin_keyboard,
@@ -46,7 +27,6 @@ async def set_commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @add_new_user_dec
 @check_if_user_banned_dec
-@check_if_user_member_decorator
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
         await set_commands(update, context)

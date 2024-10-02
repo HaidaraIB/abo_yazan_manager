@@ -10,12 +10,8 @@ from telegram import (
 )
 from telegram.ext import ContextTypes
 from telegram.constants import ChatType
-from telegram.error import TimedOut, NetworkError
 import os
 import uuid
-import traceback
-import json
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,8 +22,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
-if int(os.getenv("OWNER_ID")) != 755501092:
-    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def check_hidden_keyboard(context: ContextTypes.DEFAULT_TYPE):
@@ -44,7 +38,30 @@ def check_hidden_keyboard(context: ContextTypes.DEFAULT_TYPE):
 
 
 def build_user_keyboard():
-    keyboard = []
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text="سحب 📤",
+                callback_data="withdraw",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="الفريق 👥",
+                callback_data="team",
+            ),
+            InlineKeyboardButton(
+                text="حسابي 👤",
+                callback_data="my account",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="تحديث ♻️",
+                callback_data="refresh",
+            )
+        ],
+    ]
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -117,39 +134,3 @@ def create_folders():
 async def invalid_callback_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == ChatType.PRIVATE:
         await update.callback_query.answer("انتهت صلاحية هذا الزر")
-
-
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if isinstance(context.error, (TimedOut, NetworkError)):
-        return
-    update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    try:
-        error = f"""update = {json.dumps(update_str, indent=2, ensure_ascii=False)} 
-        
-user_data = {str(context.user_data)}
-chat_data = {str(context.chat_data)}
-
-{''.join(traceback.format_exception(None, context.error, context.error.__traceback__))}
-
-{'-'*100}
-
-
-    """
-
-        with open("errors.txt", "a", encoding="utf-8") as f:
-            f.write(error)
-    except TypeError:
-        error = f"""update = TypeError
-        
-user_data = {str(context.user_data)}
-chat_data = {str(context.chat_data)}
-
-{''.join(traceback.format_exception(None, context.error, context.error.__traceback__))}
-
-{'-'*100}
-
-
-    """
-
-        with open("errors.txt", "a", encoding="utf-8") as f:
-            f.write(error)
