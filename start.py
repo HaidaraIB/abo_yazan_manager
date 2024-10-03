@@ -110,7 +110,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         await update.message.reply_text(
-            text="أهلاً بك...",
+            text="ليس لديك حساب في وكاله أبو يزن بعد قم بانشاء حساب كيوتيكس من خلال هذا <a href='https://broker-qx.pro/sign-up/?lid=1036513'>الرابط</a> وأرسل id حسابك الجديد لتفعيل بوت الوكاله الخاص بك",
             reply_markup=InlineKeyboardMarkup.from_button(
                 InlineKeyboardButton(
                     text="إضافة حساب",
