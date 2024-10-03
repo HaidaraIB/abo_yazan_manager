@@ -107,6 +107,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ),
             )
             context.user_data["my_account_msg_id"] = my_account_msg.id
+            await update.message.delete()
             return
 
         await update.message.reply_text(
@@ -118,7 +119,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             ),
         )
-        await update.message.delete()
         return ConversationHandler.END
 
 
