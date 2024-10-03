@@ -100,32 +100,30 @@ async def get_my_account_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 user_id=update.effective_user.id,
                 trader_id=trader_id,
             )
+            account = models.Account.get(trader_id=trader_id)
+            await edit_message(
+                context=context,
+                user_id=update.effective_user.id,
+                text=stringify_account_info(
+                    info=models.AccountInfo.get(trader_id=account.trader_id)
+                ),
+                msg_id=context.user_data["my_account_msg_id"],
+                reply_markup=InlineKeyboardMarkup.from_row(
+                    [
+                        InlineKeyboardButton(
+                            text="تعديل الحساب 🆕",
+                            callback_data="update account",
+                        ),
+                        InlineKeyboardButton(
+                            text="تحديث ♻️",
+                            callback_data="refresh",
+                        ),
+                    ]
+                ),
+            )
 
         await models.Referral.add(
             user_id=update.effective_user.id, referral_trader_id=trader_id
-        )
-
-        account = models.Account.get(trader_id=trader_id)
-
-        await edit_message(
-            context=context,
-            user_id=update.effective_user.id,
-            text=stringify_account_info(
-                info=models.AccountInfo.get(trader_id=account.trader_id)
-            ),
-            msg_id=context.user_data["my_account_msg_id"],
-            reply_markup=InlineKeyboardMarkup.from_row(
-                [
-                    InlineKeyboardButton(
-                        text="تعديل الحساب 🆕",
-                        callback_data="update account",
-                    ),
-                    InlineKeyboardButton(
-                        text="تحديث ♻️",
-                        callback_data="refresh",
-                    ),
-                ]
-            ),
         )
 
         await wait_msg.delete()
