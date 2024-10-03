@@ -80,9 +80,10 @@ async def get_my_account_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 user_id=update.effective_user.id,
                 trader_id=trader_id,
             )
-            await update.message.reply_text(
+            msg = await update.message.reply_text(
                 text="تمت إضافة الحساب بنجاح ✅، اضغط /start للمتابعة."
             )
+            context.user_data["add_account_success_msg_id"] = msg.id
 
         elif action.startswith("update"):
             await models.Account.reattach_to_user(

@@ -37,6 +37,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         account = models.Account.get(user_id=update.effective_user.id)
         if account:
 
+            try:
+                await context.bot.delete_message(
+                    chat_id=update.effective_user.id,
+                    message_id=context.user_data["add_account_success_msg_id"],
+                )
+            except:
+                pass
+
             await update.message.reply_text(text=ACCOUNT_LEVELS_TEXT)
 
             balance_info_msg = await update.message.reply_text(
@@ -58,7 +66,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     [
                         InlineKeyboardButton(
                             text="رابط المشاركة",
-                            url="https://broker-qx.pro/?lid=1011365",
+                            url="https://broker-qx.pro/sign-up/?lid=1036513",
                         ),
                         InlineKeyboardButton(
                             text="بونص 50%",
@@ -110,6 +118,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             ),
         )
+        await update.message.delete()
         return ConversationHandler.END
 
 
