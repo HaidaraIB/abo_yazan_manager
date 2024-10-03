@@ -67,7 +67,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         trader_id=ref.referral_trader_id, is_closed=is_closed, data=data
                     )
 
-                account = models.Account.get(user_id=update.effective_user.id)
                 await edit_message(
                     context=context,
                     user_id=update.effective_user.id,
