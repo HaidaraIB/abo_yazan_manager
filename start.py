@@ -36,6 +36,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await set_commands(update, context)
         account = models.Account.get(user_id=update.effective_user.id)
         if account:
+
+            await update.message.reply_text(text=ACCOUNT_LEVELS_TEXT)
+
             balance_info_msg = await update.message.reply_text(
                 text=stringify_balance_info(user_id=update.effective_user.id),
                 reply_markup=InlineKeyboardMarkup.from_row(
@@ -50,7 +53,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["balance_info_msg_id"] = balance_info_msg.id
 
             await update.message.reply_text(
-                text="روابط 🔗",
+                text="قم بدعوة الاصدقاء الى منصة كيوتيكس عن طريق مشاركه رابط الإحاله الخاص بك للحصول على على نسبه ربح من حجم التداول الكلي للأعضاء",
                 reply_markup=InlineKeyboardMarkup.from_row(
                     [
                         InlineKeyboardButton(
@@ -85,7 +88,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=InlineKeyboardMarkup.from_row(
                     [
                         InlineKeyboardButton(
-                            text="تعديل الحساب",
+                            text="تعديل الحساب 🆕",
                             callback_data="update account",
                         ),
                         InlineKeyboardButton(

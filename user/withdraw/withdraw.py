@@ -139,16 +139,6 @@ async def confirm_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ),
             )
 
-            await update.message.reply_text(
-                text=("تم ✅\n" "الرجاء الضغط على تحديث ♻️"),
-                reply_markup=InlineKeyboardMarkup.from_button(
-                    InlineKeyboardButton(
-                        text="تحديث ♻️",
-                        callback_data="refresh to delete",
-                    )
-                ),
-            )
-
         else:
             await update.callback_query.answer(
                 text="تم الإلغاء ❌",

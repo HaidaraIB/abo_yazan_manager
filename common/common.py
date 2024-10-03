@@ -14,6 +14,7 @@ import os
 import uuid
 import models
 from dotenv import load_dotenv
+from common.constants import *
 
 load_dotenv()
 
@@ -123,20 +124,34 @@ def calc_available_balance(user_id: int):
         trader_ids=list(map(lambda x: x.referral_trader_id, refs))
     )
 
-    team_balance = (
-        sum(list(map(lambda x: x.vol_share, refs_info))) - my_account_info.vol_share
+    my_account_balance = (
+        my_account_info.turnover_clear * my_account_info.profit_percentage
     )
-    level_reward = 0  # TODO how to calc?
-    all_time_balance = my_account_info.vol_share + team_balance + level_reward
+
+    team_balance = (
+        sum(
+            list(
+                map(
+                    lambda x: x.turnover_clear * x.profit_percentage,
+                    refs_info,
+                )
+            )
+        )
+        - my_account_balance
+    )
+    level_reward = sum(
+        ACCOUNT_LEVELS[ref_info.level]["bonus"] for ref_info in refs_info
+    )
+    all_time_balance = my_account_balance + team_balance + level_reward
     available_balance = all_time_balance - my_account.withdrawals
 
     return {
+        "my_account_balance": my_account_balance,
         "team_balance": team_balance,
         "level_reward": level_reward,
         "all_time_balance": all_time_balance,
-        "available_balance": available_balance,
-        "my_account_balance": my_account_info.vol_share,
         "withdrawals": my_account.withdrawals,
+        "available_balance": available_balance,
     }
 
 

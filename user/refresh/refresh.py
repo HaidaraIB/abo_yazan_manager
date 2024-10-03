@@ -14,7 +14,8 @@ from user.send_id.common import (
 async def refresh(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
         wait_msg = await context.bot.send_message(
-            chat_id=update.effective_user.id, text="الرجاء الانتظار..."
+            chat_id=update.effective_user.id,
+            text="الرجاء الانتظار...",
         )
         refs = models.Referral.get(user_id=update.effective_user.id)
         for ref in refs:
@@ -69,7 +70,7 @@ async def refresh(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup.from_row(
                 [
                     InlineKeyboardButton(
-                        text="تعديل الحساب",
+                        text="تعديل الحساب 🆕",
                         callback_data="update account",
                     ),
                     InlineKeyboardButton(
@@ -79,8 +80,10 @@ async def refresh(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]
             ),
         )
-        await update.callback_query.answer(text="تم التحديث ✅", show_alert=True)
-
+        try:
+            await update.callback_query.answer(text="تم التحديث ✅", show_alert=True)
+        except:
+            pass
         await wait_msg.delete()
         if "to delete" in update.callback_query.data:
             await update.callback_query.delete_message()

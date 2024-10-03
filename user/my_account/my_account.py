@@ -25,16 +25,25 @@ ID = 0
 async def manage_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == Chat.PRIVATE:
         data = update.callback_query.data
-        if data.startswith("add"):
-            await update.callback_query.delete_message()
         context.user_data["manage_account_action"] = data
-        await update.callback_query.answer(
-            text=(
-                "أرسل الآيدي.\n"
-                "في حال إرسالك آيدي حسابك الحالي أو آيدي حساب عائد لشخص آخر فسيقوم البوت بتجاهل الآيدي وحسب."
-            ),
-            show_alert=True,
-        )
+
+        if data.startswith("add"):
+            await update.callback_query.answer(
+                text=(
+                    "أرسل الآيدي.\n"
+                    "في حال إرسالك آيدي حساب عائد لشخص آخر فسيقوم البوت بتجاهل الآيدي وحسب."
+                ),
+                show_alert=True,
+            )
+            await update.callback_query.delete_message()
+        else:
+            await update.callback_query.answer(
+                text=(
+                    "أرسل الآيدي.\n"
+                    "في حال إرسالك آيدي حسابك الحالي أو آيدي حساب عائد لشخص آخر فسيقوم البوت بتجاهل الآيدي وحسب."
+                ),
+                show_alert=True,
+            )
         return ID
 
 
@@ -80,15 +89,6 @@ async def get_my_account_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 user_id=update.effective_user.id,
                 trader_id=trader_id,
             )
-            await update.message.reply_text(
-                text=("تم ✅\n" "الرجاء الضغط على تحديث ♻️"),
-                reply_markup=InlineKeyboardMarkup.from_button(
-                    InlineKeyboardButton(
-                        text="تحديث ♻️",
-                        callback_data="refresh to delete",
-                    )
-                ),
-            )
 
         await models.Referral.add(
             user_id=update.effective_user.id, referral_trader_id=trader_id
@@ -106,7 +106,7 @@ async def get_my_account_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup.from_row(
                 [
                     InlineKeyboardButton(
-                        text="تعديل الحساب",
+                        text="تعديل الحساب 🆕",
                         callback_data="update account",
                     ),
                     InlineKeyboardButton(

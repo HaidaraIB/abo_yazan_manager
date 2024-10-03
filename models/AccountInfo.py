@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from models.DB import Base, connect_and_close, lock_and_release
+from models.AccountLevel import AccountLevel
 
 
 class AccountInfo(Base):
@@ -9,8 +10,6 @@ class AccountInfo(Base):
     trader_id = sa.Column(sa.String, primary_key=True)
     country = sa.Column(sa.String)
     registery_date = sa.Column(sa.Date)
-    level = sa.Column(sa.Integer, default=1)
-    profit_percentage = sa.Column(sa.Float)  # TODO calc a default value
     balance = sa.Column(sa.Float)
     deposits_count = sa.Column(sa.Integer)
     deposits_sum = sa.Column(sa.Float)
@@ -18,6 +17,9 @@ class AccountInfo(Base):
     withdrawal_sum = sa.Column(sa.Float)
     turnover_clear = sa.Column(sa.BigInteger)
     vol_share = sa.Column(sa.BigInteger)
+
+    level = sa.Column(sa.Integer, default=1)
+    profit_percentage = sa.Column(sa.Float)
 
     closed = sa.Column(sa.Boolean, default=False)
 
@@ -62,7 +64,12 @@ class AccountInfo(Base):
     @classmethod
     @lock_and_release
     async def update_info(cls, data: dict, is_closed: bool, s: Session = None):
-        update_dict = {cls.closed: is_closed}
+        acc_lv = AccountLevel.get(amount=data["turnover_clear"])
+        update_dict = {
+            cls.closed: is_closed,
+            cls.level: acc_lv.level,
+            cls.profit_percentage: acc_lv.percentage,
+        }
         for k, v in data.items():
             col = getattr(cls, k, None)
             if col is None:
@@ -72,18 +79,20 @@ class AccountInfo(Base):
 
     @classmethod
     @lock_and_release
-    async def update_field(
+    async def update_fields(
         cls,
         trader_id: str,
-        field_name: str,
-        new_val,
+        field_names: str | list[str],
+        new_vals,
         s: Session = None,
     ):
-        s.query(cls).filter_by(trader_id=trader_id).update(
-            {
-                getattr(cls, field_name): new_val,
-            }
-        )
+        update_dict = {}
+        if isinstance(field_names, str):
+            update_dict[getattr(cls, field_names)] = new_vals
+        else:
+            for n, v in zip(field_names, new_vals):
+                update_dict[getattr(cls, n)] = v
+        s.query(cls).filter_by(trader_id=trader_id).update()
 
     @classmethod
     @lock_and_release
@@ -93,4 +102,12 @@ class AccountInfo(Base):
         is_closed: bool,
         s: Session = None,
     ):
-        s.execute(sa.insert(cls).values(**data, closed=is_closed))
+        acc_lv = AccountLevel.get(amount=data["turnover_clear"])
+        s.execute(
+            sa.insert(cls).values(
+                **data,
+                level=acc_lv.level,
+                profit_percentage=acc_lv.percentage,
+                closed=is_closed,
+            )
+        )

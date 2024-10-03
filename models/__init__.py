@@ -4,5 +4,6 @@ from models.BaseUser import BaseUser
 from models.User import User
 from models.Account import Account
 from models.AccountInfo import AccountInfo
+from models.AccountLevel import AccountLevel
 from models.Referral import Referral
 from models.RemoteDB import RemoteDB

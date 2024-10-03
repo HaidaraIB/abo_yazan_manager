@@ -76,15 +76,6 @@ async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
 
-        await update.message.reply_text(
-            text=("تم ✅\n" "الرجاء الضغط على تحديث ♻️"),
-            reply_markup=InlineKeyboardMarkup.from_button(
-                InlineKeyboardButton(
-                    text="تحديث ♻️",
-                    callback_data="refresh to delete",
-                )
-            ),
-        )
 
         await wait_msg.delete()
         await update.message.delete()
