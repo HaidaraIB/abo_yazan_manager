@@ -28,6 +28,16 @@ async def manage_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["manage_account_action"] = data
 
         if data.startswith("add"):
+
+            account = models.Account.get(user_id=update.effective_user.id)
+            if account:
+                await update.callback_query.answer(
+                    text="لديك حساب بالفعل",
+                    show_alert=True,
+                )
+                await update.callback_query.delete_message()
+                return ConversationHandler.END
+
             await update.callback_query.answer(
                 text=(
                     "أرسل الآيدي.\n"
